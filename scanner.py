@@ -54,7 +54,11 @@ def grab_service_banner(ip, port, banner_timeout):
 def run_active_probing_checks(ip, open_ports):
     probes_log = []
     web_ports = [p for p in open_ports if p in [80, 443, 5000, 9080, 28385, 28390]]
-    for port in web_ports:
+
+    for port in open_ports:
+        if port not in web_ports:
+            probes_log.append(f"[dim white]• Port {port} skipped — not an HTTP target.[/dim white]")
+            continue
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(1.5)
@@ -67,7 +71,8 @@ def run_active_probing_checks(ip, open_ports):
             else:
                 probes_log.append(f"[dim green]✓ Port {port} responded safely to malformed pathing payload.[/dim green]")
         except Exception:
-            pass
+            probes_log.append(f"[dim yellow]• Port {port} did not respond to probe.[/dim yellow]")
+
     return probes_log
 
 def run_authenticated_os_audit(ip):
@@ -105,6 +110,44 @@ def prompt_float(label, hint, default):
         time.sleep(1.0)
         return default
 
+def prompt_int(label, hint, default):
+    console.print(f"\n[bold green]{label}[/bold green]")
+    console.print(f"[dim white] {hint}[/dim white]")
+    try:
+        val = input(" > ").strip()
+        return int(val) if val else default
+    except ValueError:
+        console.print(f"[bold yellow]Invalid input. Defaulting to {default}.[/bold yellow]")
+        time.sleep(1.0)
+        return default
+
+def prompt_port_range():
+    console.print("\n[bold green]Port Range[/bold green]")
+    console.print("[dim white] Examples: 1-1024 | 80,443,8080 | leave blank for full scan (1-65536)[/dim white]")
+    val = input(" > ").strip()
+
+    if not val:
+        return list(range(1, 65537))
+
+    ports = set()
+    try:
+        for part in val.split(","):
+            part = part.strip()
+            if "-" in part:
+                start, end = part.split("-", 1)
+                ports.update(range(int(start), int(end) + 1))
+            else:
+                ports.add(int(part))
+
+        ports = [p for p in ports if 1 <= p <= 65535]
+        if not ports:
+            raise ValueError
+        return sorted(ports)
+    except ValueError:
+        console.print("[bold yellow]Invalid input. Defaulting to full scan.[/bold yellow]")
+        time.sleep(1.0)
+        return list(range(1, 65537))
+
 def main():
     while True:
         console.print("[bold green]Target IP Address[/bold green]")
@@ -125,19 +168,20 @@ def main():
         except ValueError:
             console.print(f"\n[bold red]ERROR:[/bold red] '[bold yellow]{input_ip}[/bold yellow]' is not a valid IPv4 or IPv6 address.\n")
 
+    ports = prompt_port_range()
+    thread_count = prompt_int("Thread Count", "Default: 500 — reduce if on a weak machine or unstable network", 500)
     scan_timeout = prompt_float("Port Scan Timeout (Seconds)", "Default: 0.05 for LAN, increase for weak Wi-Fi", 0.05)
     banner_timeout = prompt_float("Service Banner Timeout (Seconds)", "Default: 2.0 — increase for high-latency targets", 2.0)
 
     console.print(f"\n[bold yellow]STATUS:[/bold yellow] Starting scanning operation on [bold cyan]{input_ip}[/bold cyan]...")
 
-    ports = list(range(1, 65537))
     random.shuffle(ports)
 
     open_ports = []
     lock = threading.Lock()
     start_time = time.time()
 
-    executor = ThreadPoolExecutor(max_workers=500)
+    executor = ThreadPoolExecutor(max_workers=thread_count)
     try:
         futures = executor.map(lambda port: scan_single_port(input_ip, port, open_ports, scan_timeout, lock), ports)
         for _ in futures:
@@ -177,8 +221,9 @@ def main():
 
     summary_text = (
         f"Target IP:          [bold white]{input_ip}[/bold white]\n"
-        f"Ports Scanned:      [bold white]65,536[/bold white]\n"
+        f"Ports Scanned:      [bold white]{len(ports):,}[/bold white]\n"
         f"Total Active Open:  [bold bright_green]{len(open_ports)}[/bold bright_green]\n"
+        f"Threads Used:       [bold white]{thread_count}[/bold white]\n"
         f"Time Elapsed:       [bold yellow]{total_duration:.2f} seconds[/bold yellow]\n\n"
         f"[bold green]SERVICE MAP DETECTED[/bold green]\n"
         f"────────────────────────────────────────────────────────────────────────────────"

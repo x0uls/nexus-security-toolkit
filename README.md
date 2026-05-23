@@ -7,8 +7,9 @@ A multi-threaded port scanner with banner grabbing capabilities. Quickly scan ne
 - 🚀 **Multi-threaded scanning** - Fast port scanning using concurrent threads
 - 🎯 **Banner grabbing** - Automatically detects service information on open ports
 - 🎨 **Rich UI** - Beautiful terminal interface with colored output
-- 🔍 **Flexible port ranges** - Scan single ports or ranges
+- 🔍 **Flexible port ranges** - Scan single ports, ranges, or comma-separated lists
 - ⚡ **Configurable timeout** - Adjust scan speed and accuracy
+- 🧵 **Configurable threads** - Tune concurrency to your machine
 
 ## Requirements
 
@@ -75,9 +76,9 @@ brew install nexus-security-toolkit
 ## Quick Start
 
 1. **Start the toolkit:**
-   ```bash
+```bash
    python main.py
-   ```
+```
 
 2. **Select an option from the menu:**
    - Option `1` - Multi-Threaded Port Scanner
@@ -85,35 +86,42 @@ brew install nexus-security-toolkit
 
 3. **Enter target information when prompted:**
    - Target IP address
-   - Port range (e.g., `80-443` or `22`)
-   - Number of threads (default: 100)
-   - Timeout per port (default: 1 second)
+   - Port range (e.g., `80-443`, `22`, or `80,443,8080` — leave blank for full scan)
+   - Thread count (default: 500)
+   - Scan timeout per port (default: 0.05s)
+   - Banner grab timeout (default: 2.0s)
 
 ## Usage Examples
 
 ### Scan common web ports
-```
 Target IP: 192.168.1.100
 Port range: 80-443
-Threads: 50
-Timeout: 1
-```
+Threads: 500
+Scan timeout: 0.05
+Banner timeout: 2.0
 
-### Scan all SSH and common services
-```
+### Scan specific services
 Target IP: 10.0.0.50
 Port range: 22,80,443,3306,5432
-Threads: 100
-Timeout: 2
-```
+Threads: 200
+Scan timeout: 0.1
+Banner timeout: 2.0
+
+### Full scan on LAN
+Target IP: 192.168.1.1
+Port range: (leave blank)
+Threads: 500
+Scan timeout: 0.05
+Banner timeout: 2.0
 
 ## Configuration
 
 ### Adjustable Parameters
 
-- **Threads**: Increase for faster scans (higher CPU usage)
-- **Timeout**: Lower for faster scans (may miss slow services), higher for accuracy
-- **Port ranges**: Specify individual ports or ranges (e.g., `1-1024` or `80,443,8080`)
+- **Port range**: Single port, range (`1-1024`), or comma-separated (`80,443,8080`). Leave blank for full 65,536 port scan.
+- **Threads**: Higher = faster scans, more CPU/memory usage. Default 500 works well on most modern machines. Reduce to 100-200 on weak hardware.
+- **Scan timeout**: Lower = faster but may miss slow/distant targets. 0.05s recommended for LAN, 0.2-0.5s for remote targets.
+- **Banner timeout**: How long to wait for a service response after connecting. 2.0s is safe for most targets.
 
 ## Dependencies
 
@@ -132,24 +140,22 @@ pip install rich
 
 ### "Module not found" error
 ```bash
-# Ensure all dependencies are installed
 pip install -r requirements.txt
 ```
 
 ### Permission denied on Linux/macOS
 ```bash
-# Make scripts executable
 chmod +x main.py
 ```
 
 ### Slow scanning
-- Increase the number of threads
-- Decrease the timeout value
-- Check your network connectivity
+- Increase thread count
+- Decrease scan timeout
+- Check network connectivity
 
 ### High CPU usage
-- Reduce the number of threads
-- Increase the timeout value
+- Reduce thread count
+- Increase scan timeout
 
 ## Legal Notice
 
