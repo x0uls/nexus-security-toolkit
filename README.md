@@ -94,25 +94,31 @@ brew install nexus-security-toolkit
 ## Usage Examples
 
 ### Scan common web ports
+```
 Target IP: 192.168.1.100
 Port range: 80-443
 Threads: 500
 Scan timeout: 0.05
 Banner timeout: 2.0
+```
 
 ### Scan specific services
+```
 Target IP: 10.0.0.50
 Port range: 22,80,443,3306,5432
 Threads: 200
 Scan timeout: 0.1
 Banner timeout: 2.0
+```
 
 ### Full scan on LAN
+```
 Target IP: 192.168.1.1
 Port range: (leave blank)
 Threads: 500
 Scan timeout: 0.05
 Banner timeout: 2.0
+```
 
 ## Configuration
 
